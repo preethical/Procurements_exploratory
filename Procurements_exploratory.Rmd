@@ -1,0 +1,147 @@
+---
+title: "Exploratory Analysis of health procurements"
+author: "preethi"
+date: "8/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+From a given list of 9000 odd procurements from the state of Himachal Pradesh, we selected ~5000 health related procurements to analyse. 
+We have include the details on how we went about selecting the procurment related data [here](https://docs.google.com/document/d/1Wb2PCqL0Fx2_Hz4Zuqpie0c5_z7ixHHGf5UwtBPtAls/edit)
+First let us look at the data
+
+```{r summary}
+#rm(health_awards,patterns, health_contract)
+
+#health_awards <- read.csv("health_award.csv", stringsAsFactors = FALSE)
+
+#health_contract <- read.csv("merged_results_archive", stringsAsFactors = FALSE)
+library(dplyr)
+library(stringr)
+library(xlsx)
+library(tidyverse)
+
+data_analysis <- read.csv("tenders_v_1 - tenders_v_1.csv", stringsAsFactors = FALSE)
+#patterns <- read.xlsx("New Microsoft Excel Worksheet.xlsx", 1)
+
+pattern1 <- c("medical", "hospital", "health")
+
+data_text %>%
+  filter_all(any_vars(str_detect(., 'text')))
+
+
+
+```
+
+patterns <- data.frame(word = c("Medical", "Hospital", "Health", "PHC", "CHC","ambulance","Medicine","diet","Food","Sanitation", "Sanitary","Sewerage","Sewage", "water","pump","pumping","rain","Pollution","Air quality","road","pulses","mustard","salt","microscope","biochemistry","WSS", "FIS", "tank", "GI","pipe", "radiograph","irrigation"), SDG = c("3.8","3.8","3.8", "3.8","3.8","3.8","3.8","2.1","2.1","3.3","3.3","3.3","3.3","6.1","3.3","3.3","6.1","3.9","3.9","3.6","2.1","2.1","2.1","3.c","3.c","6.4", "6.4", "3.3", "3.3", "3.3", "3.c", "6.4"))
+
+
+for(i in seq_len(nrow(patterns))) {
+  want <- grepl(patterns[i, "word"], data_analysis[, "tender.title"],ignore.case = T)
+data_analysis[want, "SDG"] <- patterns[i, "SDG"]
+}                                                                                                  
+for(i in seq_len(nrow(patterns))) {
+  want <- grepl(patterns[i, "word"], data_analysis[, "tender.description"],ignore.case = T)
+ data_analysis[want, "SDG"] <- patterns[i, "SDG"]
+} 
+
+write.csv(data_analysis, "tenders_v2.csv")
+
+#data_analysis %>% filter_all(any_vars(. %in% c('medicine', 'medical', 'hospital', 'health')))
+  
+```
+
+
+patterns$Word <- as.character(patterns$Word)
+
+
+ #for(i in seq_len(nrow(patterns))) {
+  #  want <- grepl(patterns[i, "word"], health_awards[, "Title.and.Ref.No..Tender.Id"],ignore.case = T)
+ #   health_awards[want, "pattern"] <- patterns[i, "pattern"]
+#}
+
+
+for(i in seq_len(nrow(patterns))) {
+    want <- grepl(patterns[i, "Word"], data_analysis[,is.na("tender.title")],ignore.case =T)
+    data_analysis[want, "SDG"]<- patterns[i,"SDG"]
+}
+
+#for(i in seq_len(nrow(patterns))) {
+ #   want <- grepl(patterns[i, "keyword"], data_analysis[,is.na #("tender.description")],ignore.case = T)
+ #   data_analysis [want, "SDG"] <- patterns[i, "SDG"]
+#}
+
+ 
+Coalese the different files 
+
+library(dplyr)
+data_analysis$pattern_work_desc <- coalesce(data_analysis$pattern_work_desc, data_analysis$pattern_tender_title)
+
+data_analysis$pattern_work_desc <- coalesce(data_analysis$pattern_work_desc, data_analysis$pattern_title)
+
+data_analysis$pattern_work_desc <- coalesce(data_analysis$pattern_work_desc, data_analysis$pattern_title_desc)
+
+data_analysis$pattern_work_desc <- coalesce(data_analysis$pattern_work_desc, data_analysis$pattern_title)
+
+data_analysis$pattern_work_desc <- coalesce(data_analysis$pattern_work_desc, data_analysis$pattern_title_1)
+
+data_analysis$pattern_work_desc[is.na(data_analysis$pattern_work_desc)] <- "Other"
+
+
+#health_awards$AOC.Date <- sub("(T).*$","",health_awards$AOC.Date)
+
+#health_awards$AOC.Date <- as.Date(health_awards$AOC.Date, format = "%Y-%m-%d")
+
+patterns$keyword <- as.character(patterns$keyword)
+
+data_analysis$SDG_5 <- coalesce(data_analysis$SDG_5, data_analysis$SDG_4)
+
+data_analysis$SDG_5<- coalesce(data_analysis$SDG_5, data_analysis$SDG_3)
+
+data_analysis$SDG_5<- coalesce(data_analysis$SDG_5, data_analysis$SDG_2)
+
+data_analysis$SDG_5<- coalesce(data_analysis$SDG_5, data_analysis$SDG_1)
+
+#health_awards$AOC.Date <- sub("(T).*$","",health_awards$AOC.Date)
+
+#health_awards$AOC.Date <- as.Date(health_awards$AOC.Date, format = "%Y-%m-%d")
+
+## Plots
+
+Adding plots 
+
+library(ggplot2); library(dplyr); library(stringr); library(tidyr)
+
+hist(health_awards$AOC.Date, "years",freq = TRUE)
+
+ for(i in seq_len(nrow(patterns))) {
+    want <- grepl(patterns[i, "word"], health_awards[, "Title.and.Ref.No..Tender.Id"],ignore.case = T)
+    health_awards[want, "pattern"] <- patterns[i, "pattern"]
+}
+
+
+ for(i in seq_len(nrow(patterns))) {
+    want <- grepl(patterns[i, "word"], health_awards[,"Tender.Description"], ignore.case = T)
+    health_awards[want, "pattern"] <- patterns[i, "pattern"]
+ }
+
+health_awards$pattern <- as.character(health_awards$pattern)
+
+health_awards$pattern[is.na(health_awards$pattern)] <- "Other"
+
+health_awards$pattern_final <- paste(health_awards$Tender.Type, health_awards$pattern, sep ="-")
+
+health_awards <- health_awards %>% separate(Organisation.Name, into = c("Org","Area","Sub_Area"), sep = "\\|\\|", extra = "merge")
+
+
+awards_type <- health_awards %>% group_by(pattern_final) %>% summarise(total = sum(Contract.Value, na.rm = TRUE))
+
+plot_award_type<- ggplot(data = awards_type, aes(x = pattern_final, y=total))
++geom_bar(stat = "identity")
+
+plot_award_type
